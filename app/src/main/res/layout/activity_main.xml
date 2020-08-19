@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+<LinearLayout
+    android:layout_alignParentBottom="true"
+    android:id="@+id/ll_player"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="100dp">
+    <ImageButton
+        android:background="#00000000"
+        android:id="@+id/ibtn_form"
+        android:src="@drawable/b3v"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="match_parent"></ImageButton>
+    <ImageButton
+        android:background="#00000000"
+        android:id="@+id/ibtn_back"
+        android:src="@drawable/b4a"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="match_parent"></ImageButton>
+    <ImageButton
+
+        android:background="#00000000"
+        android:id="@+id/ibtn_play"
+        android:src="@drawable/b4z"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="match_parent"></ImageButton>
+    <ImageButton
+
+        android:background="#00000000"
+        android:id="@+id/ibtn_forward"
+        android:src="@drawable/b3x"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="match_parent"></ImageButton>
+    <ImageButton
+        android:background="#00000000"
+        android:id="@+id/ibtn_other"
+        android:src="@drawable/b5t"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="match_parent"></ImageButton>
+</LinearLayout>
+    <TextView
+        android:maxLines="1"
+        android:paddingTop="3dp"
+        android:paddingBottom="3dp"
+        android:gravity="center"
+        android:textSize="20sp"
+        android:id="@+id/tv_music_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"></TextView>
+<ImageView
+    android:id="@+id/tv_music_bg"
+    android:scaleType="center"
+    android:src="@drawable/b3h"
+    android:layout_below="@+id/tv_music_title"
+    android:layout_above="@+id/ll_player"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"></ImageView>
+</RelativeLayout>
