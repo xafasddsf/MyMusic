@@ -2,24 +2,25 @@ package com.example.mymusic
 
 import android.Manifest
 import android.animation.ObjectAnimator
-import android.animation.ValueAnimator
+import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.database.Cursor
 import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.Environment
+import android.os.Handler
+import android.os.Message
 import android.provider.MediaStore
-import android.text.TextUtils
 import android.view.View
 import android.view.Window
-import android.view.animation.Animation
-import android.widget.*
+import android.widget.ImageButton
+import android.widget.ImageView
+import android.widget.TextView
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
-import java.io.File
 
 
 class MainActivity : AppCompatActivity(), View.OnClickListener,MusicFragmentDialog.Listener {
@@ -59,36 +60,52 @@ class MainActivity : AppCompatActivity(), View.OnClickListener,MusicFragmentDial
         } else {
             //初始化UI控件
             Init();
-            //获取本地音乐文件
-            GetLocalMusic();
+            Init()
+            val handler: Handler = object : Handler() {
+                override  fun handleMessage(msg: Message) {
+                    temp_list = ArrayList<String>()
+                    for (i in music_list) temp_list.add(i)
+                    //第一步：重置
+                    mediaPlayer.reset();
+                    //第二步:设置数据源（这里播放的是本地文件，可播放其他文件）
+                    mediaPlayer.setDataSource(this@MainActivity, Uri.parse(music_list.get(music_current_index)));
+                    //第三步：准备
+                    mediaPlayer.prepare();
+                    tv_title.text = music_list.get(music_current_index)
+                        .substring(music_list.get(music_current_index).lastIndexOf("/") + 1)
+                    mediaPlayer.setOnCompletionListener {
+                        when (player_form) {
+                            0 ->
+                                music_current_index = ++music_current_index % music_list.size
+                            1 -> {
+                            }
+                            2 ->
+                                music_current_index = (0..music_list.size - 1).random()
+                        }
+                        mediaPlayer.reset()
+                        mediaPlayer.setDataSource(music_list.get(music_current_index))
+                        mediaPlayer.prepare()
+                        mediaPlayer.start()
+                        musicFragmentDialogDialog.music_list_adapter.mMusicListIndex=temp_list.indexOf(music_list.get(music_current_index))
+                        musicFragmentDialogDialog.mMusicListIndex=musicFragmentDialogDialog.music_list_adapter.mMusicListIndex
+                        musicFragmentDialogDialog.music_list_adapter.notifyDataSetChanged()
+                        musicFragmentDialogDialog.tv_title.text= "当前播放:"+music_list.get(music_current_index).substring(music_list.get(music_current_index).lastIndexOf("/")+1)
+                        i = 1;
+                        btn_play.setImageResource(R.drawable.b4x)
+                        tv_title.text = music_list.get(music_current_index).substring(music_list.get(music_current_index).lastIndexOf("/") + 1)
+                        animator.start()
 
-            temp_list=ArrayList<String>()
-            for(i in music_list)temp_list.add(i)
-            //第一步：重置
-            mediaPlayer.reset();
-            //第二步:设置数据源（这里播放的是本地文件，可播放其他文件）
-            mediaPlayer.setDataSource(this, Uri.parse(music_list.get(music_current_index)));
-            //第三步：准备
-            mediaPlayer.prepare();
-           tv_title.text=music_list.get(music_current_index).substring(music_list.get(music_current_index).lastIndexOf("/")+1)
-           mediaPlayer.setOnCompletionListener {
-             when(player_form){
-                 0->
-                     music_current_index=++music_current_index%music_list.size
-                 1->{}
-                 2->
-                     music_current_index=(0..music_list.size-1).random()
-             }
-               mediaPlayer.reset()
-               mediaPlayer.setDataSource(music_list.get(music_current_index))
-               mediaPlayer.prepare()
-               mediaPlayer.start()
-               i=1;
-               btn_play.setImageResource(R.drawable.b4x)
-               tv_title.text=music_list.get(music_current_index).substring(music_list.get(music_current_index).lastIndexOf("/")+1)
-               animator.start()
-               animator.setCurrentPlayTime(currentPlayTime);
-           }
+                    }
+                }
+            }
+
+            var thread:Thread=Thread()
+            thread.run {
+                GetLocalMusic();
+                handler.sendEmptyMessage(5)
+            }
+            thread.start()
+
 
         }
 
@@ -122,6 +139,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener,MusicFragmentDial
         btn_forward = findViewById(R.id.ibtn_forward)
         btn_other = findViewById(R.id.ibtn_other)
         tv_title = findViewById(R.id.tv_music_title)
+
+    tv_title.setSelected(true)
         iv_bg=findViewById(R.id.iv_music_bg)
         btn_form.setOnClickListener(this);
         btn_back.setOnClickListener(this);
@@ -187,7 +206,6 @@ class MainActivity : AppCompatActivity(), View.OnClickListener,MusicFragmentDial
             }
             //快进一首歌
             R.id.ibtn_forward -> {
-
                     music_current_index = ++music_current_index%music_list.size
                     if (mediaPlayer.isPlaying) mediaPlayer.stop();
                     mediaPlayer.reset()
@@ -201,8 +219,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener,MusicFragmentDial
                 animator.setCurrentPlayTime(currentPlayTime);
             }
             R.id.ibtn_other -> {
-var music_list_index=temp_list.indexOf(music_list.get(music_current_index))
- musicFragmentDialogDialog=MusicFragmentDialog(this,temp_list,music_list.get(music_current_index),music_list_index)
+            var music_list_index=temp_list.indexOf(music_list.get(music_current_index))
+             musicFragmentDialogDialog=MusicFragmentDialog(this,temp_list,music_list.get(music_current_index),music_list_index)
                 musicFragmentDialogDialog.show(supportFragmentManager,"MusicList")
             }
         }
@@ -234,55 +252,72 @@ var music_list_index=temp_list.indexOf(music_list.get(music_current_index))
         }
         if (!hasPermissionDismiss) {
             Init()
-            GetLocalMusic();
+            val handler: Handler = object : Handler() {
+              override  fun handleMessage(msg: Message) {
+                  temp_list = ArrayList<String>()
+                  for (i in music_list) temp_list.add(i)
+                  //第一步：重置
+                  mediaPlayer.reset();
+                  //第二步:设置数据源（这里播放的是本地文件，可播放其他文件）
+                  mediaPlayer.setDataSource(this@MainActivity, Uri.parse(music_list.get(music_current_index)));
+                  //第三步：准备
+                  mediaPlayer.prepare();
+                  tv_title.text = music_list.get(music_current_index)
+                      .substring(music_list.get(music_current_index).lastIndexOf("/") + 1)
+                  mediaPlayer.setOnCompletionListener {
+                      when (player_form) {
+                          0 ->
+                              music_current_index = ++music_current_index % music_list.size
+                          1 -> {
+                          }
+                          2 ->
+                              music_current_index = (0..music_list.size - 1).random()
+                      }
+                      mediaPlayer.reset()
+                      mediaPlayer.setDataSource(music_list.get(music_current_index))
+                      mediaPlayer.prepare()
+                      mediaPlayer.start()
+                      musicFragmentDialogDialog.music_list_adapter.mMusicListIndex=temp_list.indexOf(music_list.get(music_current_index))
+                      musicFragmentDialogDialog.mMusicListIndex=musicFragmentDialogDialog.music_list_adapter.mMusicListIndex
+                      musicFragmentDialogDialog.music_list_adapter.notifyDataSetChanged()
+                      musicFragmentDialogDialog.tv_title.text= "当前播放:"+music_list.get(music_current_index).substring(music_list.get(music_current_index).lastIndexOf("/")+1)
+                      i = 1;
+                      btn_play.setImageResource(R.drawable.b4x)
+                      tv_title.text = music_list.get(music_current_index).substring(music_list.get(music_current_index).lastIndexOf("/") + 1)
+                      animator.start()
 
-            temp_list = ArrayList<String>()
-            for (i in music_list) temp_list.add(i)
-            //第一步：重置
-            mediaPlayer.reset();
-            //第二步:设置数据源（这里播放的是本地文件，可播放其他文件）
-            mediaPlayer.setDataSource(this, Uri.parse(music_list.get(music_current_index)));
-            //第三步：准备
-            mediaPlayer.prepare();
-            tv_title.text = music_list.get(music_current_index)
-                .substring(music_list.get(music_current_index).lastIndexOf("/") + 1)
-            mediaPlayer.setOnCompletionListener {
-                when (player_form) {
-                    0 ->
-                        music_current_index = ++music_current_index % music_list.size
-                    1 -> {
-                    }
-                    2 ->
-                        music_current_index = (0..music_list.size - 1).random()
+                  }
                 }
-                mediaPlayer.reset()
-                mediaPlayer.setDataSource(music_list.get(music_current_index))
-                mediaPlayer.prepare()
-                mediaPlayer.start()
-                i = 1;
-                btn_play.setImageResource(R.drawable.b4x)
-                tv_title.text = music_list.get(music_current_index).substring(music_list.get(music_current_index).lastIndexOf("/") + 1)
-                animator.start()
-
             }
 
+            var thread:Thread=Thread()
+            thread.run {
+                GetLocalMusic();
+                handler.sendEmptyMessage(5)
+            }
+            thread.start()
         }
     }
     override fun OnClick(index: Int) {
-
-        music_current_index=index;
-        if (mediaPlayer.isPlaying) mediaPlayer.stop();
-        mediaPlayer.reset()
-        mediaPlayer.setDataSource(music_list.get(music_current_index))
-        mediaPlayer.prepare()
-        mediaPlayer.start()
-        i = 1;
-        btn_play.setImageResource(R.drawable.b4x)
-        tv_title.text = music_list.get(music_current_index)
-            .substring(music_list.get(music_current_index).lastIndexOf("/") + 1)
-        musicFragmentDialogDialog.dismiss()
-
-        animator.start()
-
+    if(index==-1){
+for(i in temp_list.size-1 downTo 0)temp_list.removeAt(i)
+    }
+    else if(index==-2){player_form=0}
+    else if(index==-3){player_form=1}
+    else if(index==-4){player_form=2}
+    else {
+    music_current_index = index;
+    if (mediaPlayer.isPlaying) mediaPlayer.stop();
+    mediaPlayer.reset()
+    mediaPlayer.setDataSource(music_list.get(music_current_index))
+    mediaPlayer.prepare()
+    mediaPlayer.start()
+    i = 1;
+    btn_play.setImageResource(R.drawable.b4x)
+    tv_title.text = music_list.get(music_current_index)
+        .substring(music_list.get(music_current_index).lastIndexOf("/") + 1)
+    musicFragmentDialogDialog.dismiss()
+    animator.start()
+    }
     }
 }

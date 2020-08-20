@@ -33,7 +33,9 @@ class MusicListAdapter(var mContext: Context,var list:ArrayList<String>,var mMus
             list.removeAt(p0)
             notifyDataSetChanged()
         })
-        if(p0==mMusicListIndex)musicHolder?.music_name?.setTextColor(Color.RED)
+        if(p0==mMusicListIndex){
+
+            musicHolder?.music_name?.setTextColor(Color.RED)}
         else musicHolder?.music_name?.setTextColor(Color.BLACK)
         return view
     }
