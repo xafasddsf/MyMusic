@@ -1,18 +1,22 @@
 package com.example.mymusic
 
 import android.Manifest
+import android.animation.ObjectAnimator
+import android.animation.ValueAnimator
 import android.content.pm.PackageManager
 import android.database.Cursor
 import android.media.MediaPlayer
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
 import android.text.TextUtils
 import android.view.View
-import android.widget.ImageButton
-import android.widget.TextView
-import android.widget.Toast
+import android.view.Window
+import android.view.animation.Animation
+import android.widget.*
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import java.io.File
@@ -25,14 +29,19 @@ class MainActivity : AppCompatActivity(), View.OnClickListener,MusicFragmentDial
     lateinit var btn_forward: ImageButton;
     lateinit var btn_other: ImageButton;
     lateinit var tv_title: TextView;
+    lateinit var iv_bg:ImageView
     lateinit var music_list: ArrayList<String>
+    lateinit var temp_list:ArrayList<String>;
     var music_current_index: Int = 0;
     var i: Int = 0;
     var player_form:Int=0;
+    lateinit var animator: ObjectAnimator
+    var currentPlayTime:Long = 0
     lateinit var mediaPlayer: MediaPlayer
     lateinit var musicFragmentDialogDialog:MusicFragmentDialog
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        supportRequestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_main)
         val PERMISSIONS_STORAGE = arrayOf(
             Manifest.permission.READ_EXTERNAL_STORAGE,
@@ -52,14 +61,16 @@ class MainActivity : AppCompatActivity(), View.OnClickListener,MusicFragmentDial
             Init();
             //获取本地音乐文件
             GetLocalMusic();
-            val sdCard: String = Environment.getExternalStorageDirectory().getPath()+ File.separator
+
+            temp_list=ArrayList<String>()
+            for(i in music_list)temp_list.add(i)
             //第一步：重置
             mediaPlayer.reset();
             //第二步:设置数据源（这里播放的是本地文件，可播放其他文件）
             mediaPlayer.setDataSource(this, Uri.parse(music_list.get(music_current_index)));
             //第三步：准备
             mediaPlayer.prepare();
-       tv_title.text=music_list.get(music_current_index).substring(music_list.get(music_current_index).lastIndexOf("/")+1)
+           tv_title.text=music_list.get(music_current_index).substring(music_list.get(music_current_index).lastIndexOf("/")+1)
            mediaPlayer.setOnCompletionListener {
              when(player_form){
                  0->
@@ -75,12 +86,14 @@ class MainActivity : AppCompatActivity(), View.OnClickListener,MusicFragmentDial
                i=1;
                btn_play.setImageResource(R.drawable.b4x)
                tv_title.text=music_list.get(music_current_index).substring(music_list.get(music_current_index).lastIndexOf("/")+1)
+               animator.start()
+               animator.setCurrentPlayTime(currentPlayTime);
            }
 
         }
 
     }
-
+//获取本地音乐文件
     private fun GetLocalMusic() {
         var cursor: Cursor? = contentResolver.query(
             MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
@@ -99,7 +112,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener,MusicFragmentDial
         }
 
     }
-
+//初始化控件
     fun Init() {
         mediaPlayer = MediaPlayer()
         music_list = ArrayList<String>()
@@ -109,23 +122,30 @@ class MainActivity : AppCompatActivity(), View.OnClickListener,MusicFragmentDial
         btn_forward = findViewById(R.id.ibtn_forward)
         btn_other = findViewById(R.id.ibtn_other)
         tv_title = findViewById(R.id.tv_music_title)
+        iv_bg=findViewById(R.id.iv_music_bg)
         btn_form.setOnClickListener(this);
         btn_back.setOnClickListener(this);
         btn_play.setOnClickListener(this);
         btn_forward.setOnClickListener(this);
         btn_other.setOnClickListener(this);
-      
+     animator=ObjectAnimator.ofFloat(iv_bg,"rotation",0f,360f)
+    animator.duration=7000
+    animator.setRepeatMode(ObjectAnimator.RESTART);
+    animator.repeatCount= ObjectAnimator.INFINITE
+     currentPlayTime=0
 
     }
-
+//按钮监听事件
+    @RequiresApi(Build.VERSION_CODES.KITKAT)
     override fun onClick(p0: View?) {
         when (p0?.id) {
+            //播放形式：循环，单曲循环，随机
             R.id.ibtn_form -> {
                 player_form=++player_form%3;
                 when(player_form){
-                    0-> (p0 as ImageButton).setImageResource(R.drawable.b3v)
-                    1-> (p0 as ImageButton).setImageResource(R.drawable.b3z)
-                    2-> (p0 as ImageButton).setImageResource(R.drawable.b54)
+                    0-> (p0 as ImageButton).setImageResource(R.drawable.b3v)//循环
+                    1-> (p0 as ImageButton).setImageResource(R.drawable.b3z)//单曲循环
+                    2-> (p0 as ImageButton).setImageResource(R.drawable.b54)//随机
                 }
             }
             //快退一首歌
@@ -140,18 +160,28 @@ class MainActivity : AppCompatActivity(), View.OnClickListener,MusicFragmentDial
                     i=1;
                     btn_play.setImageResource(R.drawable.b4x)
                     tv_title.text=music_list.get(music_current_index).substring(music_list.get(music_current_index).lastIndexOf("/")+1)
+                animator.start()
+
             }
             //播放与暂停
             R.id.ibtn_play -> {
                 i = ++i % 2;
+
                 when (i) {
+                    //播放
                     1 -> {
                         mediaPlayer.start()
                         (p0 as ImageButton).setImageResource(R.drawable.b4x)
+                        animator.start()
+                        animator.setCurrentPlayTime(currentPlayTime);
                     }
+                    //暂停
                     0 -> {
                         mediaPlayer.pause()
+                        currentPlayTime = animator.getCurrentPlayTime();
+                        animator.cancel();
                         (p0 as ImageButton).setImageResource(R.drawable.b4z)
+
                     }
                 }
             }
@@ -166,13 +196,13 @@ class MainActivity : AppCompatActivity(), View.OnClickListener,MusicFragmentDial
                     mediaPlayer.start()
                     i = 1;
                     btn_play.setImageResource(R.drawable.b4x)
-                    tv_title.text = music_list.get(music_current_index)
-                        .substring(music_list.get(music_current_index).lastIndexOf("/") + 1)
-
-
+                    tv_title.text = music_list.get(music_current_index).substring(music_list.get(music_current_index).lastIndexOf("/") + 1)
+                animator.start()
+                animator.setCurrentPlayTime(currentPlayTime);
             }
             R.id.ibtn_other -> {
- musicFragmentDialogDialog=MusicFragmentDialog(this,music_list)
+var music_list_index=temp_list.indexOf(music_list.get(music_current_index))
+ musicFragmentDialogDialog=MusicFragmentDialog(this,temp_list,music_list.get(music_current_index),music_list_index)
                 musicFragmentDialogDialog.show(supportFragmentManager,"MusicList")
             }
         }
@@ -190,27 +220,54 @@ class MainActivity : AppCompatActivity(), View.OnClickListener,MusicFragmentDial
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        var hasPermissionDismiss:Boolean=false
+        var hasPermissionDismiss: Boolean = false
         if (requestCode == 101) {
             for (i in 0..grantResults.size - 1) {
                 if (grantResults[i] == PackageManager.PERMISSION_GRANTED) {
                     Toast.makeText(this, "获取读权限", Toast.LENGTH_SHORT).show()
-                }
-                else{
-                    hasPermissionDismiss=true
-                    Toast.makeText(this,"获取权限失败",Toast.LENGTH_SHORT).show()
+                } else {
+                    hasPermissionDismiss = true
+                    Toast.makeText(this, "获取权限失败", Toast.LENGTH_SHORT).show()
                     break;
                 }
             }
         }
-        if(!hasPermissionDismiss){
+        if (!hasPermissionDismiss) {
             Init()
             GetLocalMusic();
-            Toast.makeText(this, "1223", Toast.LENGTH_SHORT).show()
+
+            temp_list = ArrayList<String>()
+            for (i in music_list) temp_list.add(i)
+            //第一步：重置
+            mediaPlayer.reset();
+            //第二步:设置数据源（这里播放的是本地文件，可播放其他文件）
+            mediaPlayer.setDataSource(this, Uri.parse(music_list.get(music_current_index)));
+            //第三步：准备
+            mediaPlayer.prepare();
+            tv_title.text = music_list.get(music_current_index)
+                .substring(music_list.get(music_current_index).lastIndexOf("/") + 1)
+            mediaPlayer.setOnCompletionListener {
+                when (player_form) {
+                    0 ->
+                        music_current_index = ++music_current_index % music_list.size
+                    1 -> {
+                    }
+                    2 ->
+                        music_current_index = (0..music_list.size - 1).random()
+                }
+                mediaPlayer.reset()
+                mediaPlayer.setDataSource(music_list.get(music_current_index))
+                mediaPlayer.prepare()
+                mediaPlayer.start()
+                i = 1;
+                btn_play.setImageResource(R.drawable.b4x)
+                tv_title.text = music_list.get(music_current_index).substring(music_list.get(music_current_index).lastIndexOf("/") + 1)
+                animator.start()
+
+            }
+
         }
-
     }
-
     override fun OnClick(index: Int) {
 
         music_current_index=index;
@@ -224,5 +281,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener,MusicFragmentDial
         tv_title.text = music_list.get(music_current_index)
             .substring(music_list.get(music_current_index).lastIndexOf("/") + 1)
         musicFragmentDialogDialog.dismiss()
+
+        animator.start()
+
     }
 }

@@ -8,10 +8,12 @@
 <LinearLayout
     android:layout_alignParentBottom="true"
     android:id="@+id/ll_player"
+    android:gravity="center"
     android:orientation="horizontal"
     android:layout_width="match_parent"
     android:layout_height="100dp">
     <ImageButton
+
         android:background="#00000000"
         android:id="@+id/ibtn_form"
         android:src="@drawable/b3v"
@@ -19,6 +21,7 @@
         android:layout_weight="1"
         android:layout_height="match_parent"></ImageButton>
     <ImageButton
+        android:scaleType="center"
         android:background="#00000000"
         android:id="@+id/ibtn_back"
         android:src="@drawable/b4a"
@@ -59,11 +62,12 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"></TextView>
 <ImageView
-    android:id="@+id/tv_music_bg"
+    android:id="@+id/iv_music_bg"
     android:scaleType="center"
     android:src="@drawable/b3h"
     android:layout_below="@+id/tv_music_title"
     android:layout_above="@+id/ll_player"
     android:layout_width="match_parent"
     android:layout_height="match_parent"></ImageView>
+
 </RelativeLayout>

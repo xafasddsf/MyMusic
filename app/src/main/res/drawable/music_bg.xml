@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rotate android:drawable="@drawable/b3h" android:pivotX="50%" android:pivotY="50%" xmlns:android="http://schemas.android.com/apk/res/android">
+
+</rotate>
